@@ -1,0 +1,46 @@
+services:
+  deepseek-server:
+    build: .
+    container_name: deepseek_server_small
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_NAME=microsoft/DialoGPT-small
+      - USE_QUANTIZATION=false
+      - HOST=0.0.0.0
+      - PORT=8000
+      - TRANSFORMERS_CACHE=/app/cache/huggingface
+      - HF_HOME=/app/cache/huggingface
+      - HUGGINGFACE_HUB_CACHE=/app/cache/huggingface
+    volumes:
+      - model_cache_small:/app/cache/huggingface
+      - logs_data:/app/logs
+    restart: unless-stopped
+    x-tinkr:
+      cpu: 1024  # 0.5 CPU cores - sufficient for small model
+      memory: 3072  # 2GB RAM
+      network:
+        public: true  # Make API publicly accessible
+      ports:
+        deepseek-api:
+          port: 8000
+          protocol: http
+          public: true
+          healthcheck:
+            timeout: 15
+            interval: 30
+            path: /health
+            retries: 3
+            success_code: 200-299
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 120s  # 2 minutes should be enough for small model
+
+volumes:
+  model_cache_small:
+    driver: local
+  logs_data:
+    driver: local

@@ -1,0 +1,20 @@
+# For testing with small models
+services:
+  deepseek-server:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_NAME=microsoft/DialoGPT-small  # ~100MB
+      - USE_QUANTIZATION=false
+      - TRANSFORMERS_CACHE=/app/cache/huggingface
+    volumes:
+      - model_cache_small:/app/cache/huggingface
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+volumes:
+  model_cache_small:
+    driver: local

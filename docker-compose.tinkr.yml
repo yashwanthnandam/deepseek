@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  deepseek-server:
+    build: .
+    container_name: deepseek_server
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_NAME=deepseek-ai/deepseek-coder-1.3b-base
+      - USE_QUANTIZATION=true
+      - HOST=0.0.0.0
+      - PORT=8000
+    volumes:
+      - model_cache:/home/deepseek/.cache/huggingface
+      - logs_data:/app/logs
+    restart: unless-stopped
+    x-tinkr:
+      cpu: 2048  # 2 CPU cores for model inference
+      memory: 6144  # 6GB RAM for model + quantization
+      network:
+        public: true  # Make the API publicly accessible
+      ports:
+        deepseek-api:
+          port: 8000
+          protocol: http
+          public: true
+          healthcheck:
+            timeout: 30
+            interval: 60
+            path: /health
+            retries: 5
+            success_code: 200-299
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 180s  # Model loading takes time
+
+  # Optional: Redis for caching responses (uncomment if needed)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: deepseek_redis
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: unless-stopped
+  #   x-tinkr:
+  #     cpu: 256
+  #     memory: 512
+  #     network:
+  #       public: false  # Only accessible internally
+  #     ports:
+  #       redis-6379:
+  #         port: 6379
+  #         protocol: tcp
+  #         public: false
+  #   expose:
+  #     - 6379
+
+volumes:
+  model_cache:
+    driver: local
+  logs_data:
+    driver: local
+  # redis_data:
+  #   driver: local

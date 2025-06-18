@@ -1,0 +1,41 @@
+services:
+  deepseek-server:
+    build: .
+    container_name: deepseek_server_small
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_NAME=distilgpt2
+      - USE_QUANTIZATION=false
+      - HOST=0.0.0.0
+      - PORT=8000
+      - TRANSFORMERS_CACHE=/app/cache/huggingface
+    volumes:
+      - model_cache_small:/app/cache/huggingface
+    restart: unless-stopped
+    x-tinkr:
+      cpu: 512     # 0.5 core - for very light usage
+      memory: 1536 # 1.5GB - minimal but functional
+      network:
+        public: false
+      ports:
+        api:
+          port: 8000
+          protocol: http
+          public: true
+          healthcheck:
+            path: /health
+            timeout: 15
+            interval: 30
+            retries: 3
+            success_code: 200-299
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
+
+volumes:
+  model_cache_small:
+    driver: local
